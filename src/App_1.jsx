@@ -1,15 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
-import { Box, Slider, Grid, Paper, Typography, Popover, Button } from '@mui/material';
-import * as THREE from 'three';
+import { Box, Slider, TextField, Button, Grid, Paper, Typography, Popover } from '@mui/material';
 
 // Constants
 const COLUMN_TYPES = {
-  SHELF: 'SHELF',
-  DRAWER: 'DRAWER',
-  COMBINED: 'COMBINED',
-  EMPTY: 'EMPTY'
+  SHELF: 'shelf',
+  DRAWER: 'drawer',
+  COMBINED: 'combined',
+  EMPTY: 'empty'
 };
 
 const calculateStage = (width) => {
@@ -49,70 +48,35 @@ const ColumnTypeSelector = ({ anchorEl, open, onClose, onTypeSelect }) => (
   </Popover>
 );
 
-// Column Component
-const Column = ({ position, width, depth, height, type, isSelected, onClick, isLegroom }) => {
-  const [hovered, setHovered] = useState(false);
-  const groupRef = useRef();
-  const color = "white";
-  const innerWidth = width - 2; // 패널 두께 제외
+// 3D Column Component
+const Column = ({ position, width, depth, height, type, isSelected, onClick }) => {
+  const color = isSelected ? "blue" : "red"; // 선택된 컬럼 하이라이트
 
   return (
-    <group ref={groupRef} position={position}>
-      {/* 왼쪽 세로 패널 */}
+    <group position={position} onClick={onClick}>
       <mesh>
         <boxGeometry args={[2, height, depth]} />
         <meshStandardMaterial color={color} />
       </mesh>
-
-      {/* 내부 공간 collider */}
-      <mesh
-        position={[innerWidth/2 + 1, 0, 0]}
-        onPointerOver={(e) => {
-          e.stopPropagation();
-          console.log("[마우스오버]");
-          setHovered(true);
-        }}
-        onPointerOut={(e) => {
-          e.stopPropagation();
-          setHovered(false);
-        }}
-        onClick={(e) => {
-          e.stopPropagation();
-          onClick(e);
-        }}
-      >
-        <boxGeometry args={[innerWidth, height, depth]} />
-        <meshStandardMaterial 
-          transparent={true}
-          opacity={hovered ? 0.2 : 0}
-          side={THREE.DoubleSide}
-          depthTest={false}
-        />
-      </mesh>
-
-      {/* 컬럼 타입별 내부 구성요소 */}
-      {!isLegroom && (
+      {/* 컬럼 타입에 따른 추가 구성요소 */}
+      {type === COLUMN_TYPES.SHELF && (
         <>
-          {type === COLUMN_TYPES.SHELF && (
-            <>
-              {[1, 2].map((level) => (
-                <mesh key={level} position={[innerWidth/2 + 1, height * (level / 3), 0]}>
-                  <boxGeometry args={[innerWidth, 1, depth]} />
-                  <meshStandardMaterial color={color} />
-                </mesh>
-              ))}
-            </>
-          )}
-          {type === COLUMN_TYPES.DRAWER && (
-            <>
-              {[1, 2, 3].map((level) => (
-                <mesh key={level} position={[innerWidth/2 + 1, height * (level / 4), depth/4]}>
-                  <boxGeometry args={[innerWidth, height/5 - 1, depth/2]} />
-                  <meshStandardMaterial color={color} />
-                </mesh>
-              ))}
-            </>
-          )}
+          {[1, 2].map((level) => (
+            <mesh key={level} position={[0, height * (level / 3), 0]}>
+              <boxGeometry args={[width, 1, depth]} />
+              <meshStandardMaterial color={color} />
+            </mesh>
+          ))}
+        </>
+      )}
+      {type === COLUMN_TYPES.DRAWER && (
+        <>
+          {[1, 2, 3].map((level) => (
+            <mesh key={level} position={[0, height * (level / 4), depth/4]}>
+              <boxGeometry args={[width, height/5, depth/2]} />
+              <meshStandardMaterial color={color} />
+            </mesh>
+          ))}
         </>
       )}
     </group>
@@ -132,31 +96,22 @@ const Table = ({ width, depth, columns, stage, legroomPosition, selectedColumn, 
       const adjustedColumnWidth = width / (columns + 2);
       return [...Array(verticalPanels)].map((_, i) => ({
         x: -width/2 + (adjustedColumnWidth * i),
-        width: adjustedColumnWidth,
-        isLegroom: false
+        width: adjustedColumnWidth
       }));
     } else {
-      const positions = [{ x: -width/2, width: standardColumnWidth, isLegroom: false }];
+      const positions = [{ x: -width/2, width: standardColumnWidth }];
       let currentPos = -width/2;
       
       for (let i = 1; i <= columns; i++) {
         if (i === legroomPosition) {
-          currentPos += standardColumnWidth;
-          positions.push({ 
-            x: currentPos, 
-            width: legroomWidth,
-            isLegroom: true 
-          });
-          currentPos += standardColumnWidth;
+          currentPos += legroomWidth;
+          positions.push({ x: currentPos, width: legroomWidth });
         } else {
           currentPos += standardColumnWidth;
-          positions.push({ 
-            x: currentPos, 
-            width: standardColumnWidth,
-            isLegroom: false 
-          });
+          positions.push({ x: currentPos, width: standardColumnWidth });
         }
       }
+      
       return positions;
     }
   };
@@ -171,7 +126,7 @@ const Table = ({ width, depth, columns, stage, legroomPosition, selectedColumn, 
         <meshStandardMaterial color="red" />
       </mesh>
       
-      {/* Columns with hover effect */}
+      {/* Columns */}
       {panelPositions.map((pos, index) => (
         <Column
           key={`column-${index}`}
@@ -181,15 +136,16 @@ const Table = ({ width, depth, columns, stage, legroomPosition, selectedColumn, 
           height={tableHeight}
           type={columnTypes[index] || COLUMN_TYPES.EMPTY}
           isSelected={selectedColumn === index}
-          onClick={() => onColumnClick(index)}
-          isLegroom={pos.isLegroom}
+          onClick={(e) => {
+            e.stopPropagation();
+            onColumnClick(index);
+          }}
         />
       ))}
     </group>
   );
 };
 
-// Main App Component
 const App = () => {
   const [width, setWidth] = useState(100);
   const [depth, setDepth] = useState(50);
@@ -217,23 +173,13 @@ const App = () => {
       ...prev,
       [selectedColumn]: type
     }));
-    setPopoverAnchor(null);
-    setSelectedColumn(null);
   };
 
   return (
     <Box sx={{ height: '100vh', display: 'flex' }}>
       {/* 3D Viewer */}
       <Box sx={{ flex: 2 }}>
-        <Canvas 
-          camera={{ position: [200, 200, 200], fov: 50 }}
-          raycaster={{
-            computeOffsets: (e) => ({
-              offsetX: e.clientX,
-              offsetY: e.clientY
-            })
-          }}
-        >
+        <Canvas camera={{ position: [200, 200, 200], fov: 50 }}>
           <ambientLight intensity={0.5} />
           <directionalLight position={[10, 10, 10]} intensity={1} />
           <Table 
@@ -304,6 +250,7 @@ const App = () => {
           </Grid>
         </Grid>
 
+        {/* Column Type Selector Popover */}
         <ColumnTypeSelector
           anchorEl={popoverAnchor}
           open={Boolean(popoverAnchor)}
