@@ -50,11 +50,11 @@ const ColumnTypeSelector = ({ anchorEl, open, onClose, onTypeSelect }) => (
 );
 
 // Column Component
-const Column = ({ position, width, depth, height, type, isSelected, onClick, isLegroom, hasCollider }) => {
+const Column = ({ position, width, depth, height, type, isSelected, onClick, isLegroom }) => {
   const [hovered, setHovered] = useState(false);
   const groupRef = useRef();
   const color = "white";
-  const innerWidth = width - 2; // 패널 두께 제외
+  const innerWidth = width - 2;
 
   return (
     <group ref={groupRef} position={position}>
@@ -64,33 +64,30 @@ const Column = ({ position, width, depth, height, type, isSelected, onClick, isL
         <meshStandardMaterial color={color} />
       </mesh>
 
-      {/* collider는 hasCollider가 true일 때만 렌더링 */}
-      {hasCollider && (
-        <mesh
-          position={[innerWidth/2 + 1, 0, 0]}
-          onPointerOver={(e) => {
-            e.stopPropagation();
-            console.log("[마우스오버]");
-            setHovered(true);
-          }}
-          onPointerOut={(e) => {
-            e.stopPropagation();
-            setHovered(false);
-          }}
-          onClick={(e) => {
-            e.stopPropagation();
-            onClick(e);
-          }}
-        >
-          <boxGeometry args={[innerWidth, height, depth]} />
-          <meshStandardMaterial 
-            transparent={true}
-            opacity={hovered ? 0.2 : 0}
-            side={THREE.DoubleSide}
-            depthTest={false}
-          />
-        </mesh>
-      )}
+      {/* 패널 사이 공간 collider */}
+      <mesh
+        position={[innerWidth/2 + 1, 0, 0]}
+        onPointerOver={(e) => {
+          e.stopPropagation();
+          setHovered(true);
+        }}
+        onPointerOut={(e) => {
+          e.stopPropagation();
+          setHovered(false);
+        }}
+        onClick={(e) => {
+          e.stopPropagation();
+          onClick(e);
+        }}
+      >
+        <boxGeometry args={[innerWidth, height, depth]} />
+        <meshStandardMaterial 
+          transparent={true}
+          opacity={hovered ? 0.2 : 0}
+          side={THREE.DoubleSide}
+          depthTest={false}
+        />
+      </mesh>
 
       {/* 컬럼 타입별 내부 구성요소 */}
       {!isLegroom && (
@@ -124,7 +121,7 @@ const Column = ({ position, width, depth, height, type, isSelected, onClick, isL
 // Table Component
 const Table = ({ width, depth, columns, stage, legroomPosition, selectedColumn, onColumnClick, columnTypes }) => {
   const tableHeight = 73;
-  
+
   const calculatePanelPositions = () => {
     const standardColumnWidth = width / (columns + 1);
     const legroomWidth = standardColumnWidth * 2;
@@ -135,32 +132,24 @@ const Table = ({ width, depth, columns, stage, legroomPosition, selectedColumn, 
         x: -width/2 + (adjustedColumnWidth * i),
         width: adjustedColumnWidth,
         isLegroom: false,
-        isLastColumn: i === columns
+        isLastColumn: i === columns // Add isLastColumn flag
       }));
     } else {
       const positions = [];
       let currentPos = -width/2;
       
-      // Changed: Start from 0 instead of 1
       for (let i = 0; i <= columns; i++) {
-        // Adjusted: Compare with (legroomPosition - 1) to match 1-based position
-        if (i === (legroomPosition - 1)) {
-          positions.push({ 
-            x: currentPos, 
-            width: legroomWidth,
-            isLegroom: true,
-            isLastColumn: i === columns
-          });
-          currentPos += legroomWidth;
-        } else {
-          positions.push({ 
-            x: currentPos, 
-            width: standardColumnWidth,
-            isLegroom: false,
-            isLastColumn: i === columns
-          });
-          currentPos += standardColumnWidth;
-        }
+        const isLegroomSpace = i === legroomPosition;
+        const columnWidth = isLegroomSpace ? standardColumnWidth * 2 : standardColumnWidth;
+        
+        positions.push({
+          x: currentPos,
+          width: columnWidth,
+          isLegroom: isLegroomSpace,
+          isLastColumn: i === columns // Add isLastColumn flag
+        });
+        
+        currentPos += columnWidth;
       }
       return positions;
     }
@@ -176,7 +165,7 @@ const Table = ({ width, depth, columns, stage, legroomPosition, selectedColumn, 
         <meshStandardMaterial color="red" />
       </mesh>
       
-      {/* Columns with hover effect */}
+      {/* Columns */}
       {panelPositions.map((pos, index) => (
         <Column
           key={`column-${index}`}
@@ -188,8 +177,7 @@ const Table = ({ width, depth, columns, stage, legroomPosition, selectedColumn, 
           isSelected={selectedColumn === index}
           onClick={() => onColumnClick(index)}
           isLegroom={pos.isLegroom}
-          isLastColumn={pos.isLastColumn} // isLastColumn prop 추가
-          hasCollider={!pos.isLastColumn} // hasCollider prop 추가
+          isLastColumn={pos.isLastColumn} // Pass isLastColumn prop
         />
       ))}
     </group>

@@ -124,42 +124,48 @@ const Column = ({ position, width, depth, height, type, isSelected, onClick, isL
 // Table Component
 const Table = ({ width, depth, columns, stage, legroomPosition, selectedColumn, onColumnClick, columnTypes }) => {
   const tableHeight = 73;
-  
+  const verticalPanels = columns + 1;
+
   const calculatePanelPositions = () => {
     const standardColumnWidth = width / (columns + 1);
     const legroomWidth = standardColumnWidth * 2;
     
     if (legroomWidth > 120) {
       const adjustedColumnWidth = width / (columns + 2);
-      return [...Array(columns + 1)].map((_, i) => ({
+      const positions = [...Array(verticalPanels)].map((_, i) => ({
         x: -width/2 + (adjustedColumnWidth * i),
         width: adjustedColumnWidth,
         isLegroom: false,
-        isLastColumn: i === columns
+        hasCollider: i < columns // 마지막 공간은 collider 없음
       }));
+      return positions;
     } else {
-      const positions = [];
+      const positions = [{ 
+        x: -width/2, 
+        width: standardColumnWidth,
+        isLegroom: false,
+        hasCollider: true 
+      }];
       let currentPos = -width/2;
       
-      // Changed: Start from 0 instead of 1
-      for (let i = 0; i <= columns; i++) {
-        // Adjusted: Compare with (legroomPosition - 1) to match 1-based position
-        if (i === (legroomPosition - 1)) {
+      for (let i = 1; i <= columns; i++) {
+        if (i === legroomPosition) {
+          currentPos += standardColumnWidth;
           positions.push({ 
             x: currentPos, 
             width: legroomWidth,
             isLegroom: true,
-            isLastColumn: i === columns
+            hasCollider: true
           });
-          currentPos += legroomWidth;
+          currentPos += standardColumnWidth;
         } else {
+          currentPos += standardColumnWidth;
           positions.push({ 
             x: currentPos, 
             width: standardColumnWidth,
             isLegroom: false,
-            isLastColumn: i === columns
+            hasCollider: i < columns // 마지막 공간은 collider 없음
           });
-          currentPos += standardColumnWidth;
         }
       }
       return positions;
@@ -188,8 +194,7 @@ const Table = ({ width, depth, columns, stage, legroomPosition, selectedColumn, 
           isSelected={selectedColumn === index}
           onClick={() => onColumnClick(index)}
           isLegroom={pos.isLegroom}
-          isLastColumn={pos.isLastColumn} // isLastColumn prop 추가
-          hasCollider={!pos.isLastColumn} // hasCollider prop 추가
+          hasCollider={pos.hasCollider} // 새로운 prop 추가
         />
       ))}
     </group>
