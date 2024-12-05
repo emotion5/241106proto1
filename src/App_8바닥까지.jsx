@@ -2,11 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import { Box, Slider, Grid, Paper, Typography, Popover, Button } from '@mui/material';
-import EditIcon from '@mui/icons-material/Edit';
-import { Html } from '@react-three/drei';
 import * as THREE from 'three';
-
-import StyleSelector from './components/StyleSelector';
 
 // Constants
 const COLUMN_TYPES = {
@@ -54,7 +50,7 @@ const ColumnTypeSelector = ({ anchorEl, open, onClose, onTypeSelect }) => (
 );
 
 // Column Component
-const Column = ({ position, width, depth, height, type, onClick, isLegroom, hasCollider, isLastColumn }) => {
+const Column = ({ position, width, depth, height, type, isSelected, onClick, isLegroom, hasCollider, isLastColumn }) => {
   const [hovered, setHovered] = useState(false);
   const groupRef = useRef();
   const color = "white";
@@ -68,22 +64,6 @@ const Column = ({ position, width, depth, height, type, onClick, isLegroom, hasC
         <meshStandardMaterial color={color} />
       </mesh>
 
-
-      {!isLegroom && !isLastColumn && (
-        <mesh position={[innerWidth/2 + 1, height/2 - 18, 0]}>
-          <boxGeometry args={[innerWidth, 2, depth]} />
-          <meshStandardMaterial color={color} />
-        </mesh>
-      )}
-
-      {/* 두 번째 수평 패널 (첫 번째 패널에서 18 아래) */}
-      {!isLegroom && !isLastColumn && (
-        <mesh position={[innerWidth/2 + 1, height/2 - 36, 0]}>
-          <boxGeometry args={[innerWidth, 2, depth]} />
-          <meshStandardMaterial color={color} />
-        </mesh>
-      )}
-      
       {/* 바닥 패널은 legroom이 아니고 마지막 컬럼이 아닐 때만 생성 */}
       {!isLegroom && !isLastColumn && (
         <mesh position={[innerWidth/2 + 1, -35, 0]}>
@@ -108,20 +88,19 @@ const Column = ({ position, width, depth, height, type, onClick, isLegroom, hasC
           onClick={(e) => {
             e.stopPropagation();
             onClick(e);
-            }}
-          >
-            <boxGeometry args={[innerWidth, height, depth]} />
-            <meshStandardMaterial 
-            color="orange"
+          }}
+        >
+          <boxGeometry args={[innerWidth, height, depth]} />
+          <meshStandardMaterial 
             transparent={true}
             opacity={hovered ? 0.2 : 0}
             side={THREE.DoubleSide}
             depthTest={false}
-            />
-          </mesh>
-          )}
+          />
+        </mesh>
+      )}
 
-          {/* 컬럼 타입별 내부 구성요소 */}
+      {/* 컬럼 타입별 내부 구성요소 */}
       {!isLegroom && (
         <>
           {type === COLUMN_TYPES.SHELF && (
@@ -146,34 +125,12 @@ const Column = ({ position, width, depth, height, type, onClick, isLegroom, hasC
           )}
         </>
       )}
-      {/* 스타일 버튼은 마지막 컬럼이 아니고 legroom이 아닐 때만 표시 */}
-      {!isLastColumn && !isLegroom && (
-        <Html position={[innerWidth/2 + 1, -40, 0]}>
-          <Button
-            id={`style-button-${groupRef.current?.uuid}`}
-            sx={{
-              minWidth: '30px',
-              height: '30px',
-              padding: '4px',
-              backgroundColor: 'white',
-              borderRadius: '50%'
-            }}
-            onClick={(e) => {
-              e.stopPropagation();
-              onClick(e);
-            }}
-          >
-            <EditIcon sx={{ fontSize: 16 }} />
-          </Button>
-        </Html>
-      )}
     </group>
   );
 };
 
 // Table Component
-//const Table = ({ width, depth, columns, stage, legroomPosition, selectedColumn, onColumnClick, columnTypes }) => {
-const Table = ({ width, depth, columns, legroomPosition, onColumnClick, columnTypes }) => {
+const Table = ({ width, depth, columns, stage, legroomPosition, selectedColumn, onColumnClick, columnTypes }) => {
   const tableHeight = 72;
   
   const calculatePanelPositions = () => {
@@ -186,7 +143,7 @@ const Table = ({ width, depth, columns, legroomPosition, onColumnClick, columnTy
         x: -width/2 + (adjustedColumnWidth * i),
         width: adjustedColumnWidth,
         isLegroom: false,
-        isLastColumn: false
+        isLastColumn: i === columns
       }));
     } else {
       const positions = [];
@@ -236,8 +193,8 @@ const Table = ({ width, depth, columns, legroomPosition, onColumnClick, columnTy
           depth={depth}
           height={tableHeight}
           type={columnTypes[index] || COLUMN_TYPES.EMPTY}
-          //isSelected={selectedColumn === index}
-          onClick={(event) => onColumnClick(index, event)}
+          isSelected={selectedColumn === index}
+          onClick={() => onColumnClick(index)}
           isLegroom={pos.isLegroom}
           isLastColumn={pos.isLastColumn} // isLastColumn prop 추가
           hasCollider={!pos.isLastColumn} // hasCollider prop 추가
@@ -255,8 +212,6 @@ const App = () => {
   const [selectedColumn, setSelectedColumn] = useState(null);
   const [columnTypes, setColumnTypes] = useState({});
   const [popoverAnchor, setPopoverAnchor] = useState(null);
-  const [stylePopoverAnchor, setStylePopoverAnchor] = useState(null);
-  //const [selectedStyle, setSelectedStyle] = useState({});
   
   const stage = calculateStage(width);
   const columns = stage + 1;
@@ -281,20 +236,6 @@ const App = () => {
     setSelectedColumn(null);
   };
 
-  const handleStyleButtonClick = (columnIndex, event) => {
-    setSelectedColumn(columnIndex);
-    setStylePopoverAnchor(event.currentTarget); // 이벤트 타겟을 앵커로 설정
-  };
-
-  const handleStyleSelect = (styleId) => {
-    setSelectedStyle(prev => ({
-      ...prev,
-      [selectedColumn]: styleId
-    }));
-    setStylePopoverAnchor(null);
-    setSelectedColumn(null);
-  };
-
   return (
     <Box sx={{ height: '100vh', display: 'flex' }}>
       {/* 3D Viewer */}
@@ -308,7 +249,7 @@ const App = () => {
             })
           }}
         >
-          <ambientLight intensity={0.3} />
+          <ambientLight intensity={0.5} />
           <directionalLight position={[10, 10, 10]} intensity={1} />
           <Table 
             width={width} 
@@ -317,7 +258,7 @@ const App = () => {
             stage={stage}
             legroomPosition={legroomPosition}
             selectedColumn={selectedColumn}
-            onColumnClick={(index, event) => handleStyleButtonClick(index, event)}
+            onColumnClick={handleColumnClick}
             columnTypes={columnTypes}
           />
           <OrbitControls />
@@ -388,12 +329,6 @@ const App = () => {
           onTypeSelect={handleTypeSelect}
         />
       </Paper>
-      <StyleSelector
-        open={Boolean(stylePopoverAnchor)}
-        anchorEl={stylePopoverAnchor}
-        onClose={() => setStylePopoverAnchor(null)}
-        onStyleSelect={handleStyleSelect}
-      />
     </Box>
   );
 };
