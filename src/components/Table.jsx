@@ -2,7 +2,7 @@ import Column from './Column';
 
 // Add COLUMN_TYPES constant or import it
 const COLUMN_TYPES = {
-  SHELF: 'SHELF',
+  DOOR: 'DOOR',
   DRAWER: 'DRAWER',
   COMBINED: 'COMBINED',
   EMPTY: 'EMPTY'
@@ -15,8 +15,8 @@ const Table = ({
   legroomPosition, 
   onColumnClick, 
   columnTypes,
-  stage,
-  selectedColumn
+  // stage,
+  // selectedColumn
 }) => {
   const tableHeight = 72;
   

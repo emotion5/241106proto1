@@ -2,32 +2,27 @@ import { Popover, Box, Button, Tabs, Tab } from '@mui/material';
 import { useState } from 'react';
 
 const COLUMN_TYPES = {
-  SHELF: {
-    name: 'SHELF',
-    styles: ['선반', '목재선반', '유리선반']
+  DOOR: {
+    name: 'DOOR'
   },
   DRAWER: {
-    name: 'DRAWER',
-    styles: ['서랍2단', '서랍3단', '파일서랍']
+    name: 'DRAWER'
   },
   COMBINED: {
-    name: 'COMBINED',
-    styles: ['선반+서랍', '선반+문', '서랍+문']
+    name: 'COMBINED'
   },
   EMPTY: {
-    name: 'EMPTY',
-    styles: []
+    name: '선택없음'
   }
 };
 
 const ColumnTypeSelector = ({ anchorEl, open, onClose, onTypeSelect }) => {
-  const [selectedType, setSelectedType] = useState('SHELF');
+  const [selectedType, setSelectedType] = useState('DOOR');
 
-  const handleTypeSelect = (type, style) => {
-    // onTypeSelect 함수가 호출되는지 확인
-    console.log('Selected:', type, style);
-    onTypeSelect({ type, style }); // 객체로 전달
-    onClose(); // 팝업 닫기
+  const handleTypeSelect = (type) => {
+    console.log('Selected:', type);
+    onTypeSelect({ type }); // Just pass the type
+    onClose();
   };
 
   return (
@@ -41,37 +36,23 @@ const ColumnTypeSelector = ({ anchorEl, open, onClose, onTypeSelect }) => {
       }}
       sx={{
         '& .MuiPopover-paper': {
-          backgroundColor: 'rgba(255, 255, 255, 0.9)', // 빨간색 반투명 배경
+          backgroundColor: 'rgba(255, 255, 255, 0.9)',
           padding: 2,
-          border: '1px solid red'  // 테두리 추가
+          border: '1px solid red'
         }
       }}
     >
       <Box sx={{ p: 2, minWidth: 200 }}>
-        <Tabs 
-          value={selectedType}
-          onChange={(_, newValue) => setSelectedType(newValue)}
-        >
-          {Object.keys(COLUMN_TYPES).map((type) => (
-            <Tab 
-              key={type} 
-              label={COLUMN_TYPES[type].name}
-              value={type}
-            />
-          ))}
-        </Tabs>
-        <Box sx={{ mt: 2 }}>
-          {COLUMN_TYPES[selectedType].styles.map((style) => (
-            <Button
-              key={style}
-              onClick={() => handleTypeSelect(selectedType, style)}
-              fullWidth
-              sx={{ mb: 1 }}
-            >
-              {style}
-            </Button>
-          ))}
-        </Box>
+        {Object.keys(COLUMN_TYPES).map((type) => (
+          <Button
+            key={type}
+            onClick={() => handleTypeSelect(type)}
+            fullWidth
+            sx={{ mb: 1 }}
+          >
+            {COLUMN_TYPES[type].name}
+          </Button>
+        ))}
       </Box>
     </Popover>
   );

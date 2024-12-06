@@ -4,7 +4,7 @@ import { OrbitControls } from '@react-three/drei';
 import { Box, Slider, Grid, Paper, Typography, Popover, Button } from '@mui/material';
 import Table from './components/Table';
 import ColumnTypeSelector from './components/ColumnTypeSelector';
-
+import BoardGenerator from './components/BoardGenerator';
 
 const calculateStage = (width) => {
   if (width <= 125) return 1;
@@ -36,16 +36,16 @@ const App = () => {
   const handleColumnClick = (columnIndex) => {
     setSelectedColumn(columnIndex);
     const button = document.querySelector(`#column-button-${columnIndex}`);
-    console.log('Column clicked:', columnIndex);
-    console.log('Button found:', button);
+    // console.log('Column clicked:', columnIndex);
+    // console.log('Button found:', button);
     setPopoverAnchor(button);
   };
 
-  const handleTypeSelect = ({ type, style }) => {
-    console.log('App received:', type, style);
+  const handleTypeSelect = ({ type }) => {
+    
     setColumnTypes(prev => ({
       ...prev,
-      [selectedColumn]: { type, style }
+      [selectedColumn]: { type }
     }));
     setPopoverAnchor(null);
     setSelectedColumn(null);
@@ -72,10 +72,10 @@ const App = () => {
             columns={columns} 
             stage={stage}
             legroomPosition={legroomPosition}
-            selectedColumn={selectedColumn}
             onColumnClick={(index) => handleColumnClick(index)}
             columnTypes={columnTypes}
           />
+          <BoardGenerator positionX={0} positionY={0} positionZ={50} rotationX={0} rotationY={0} rotationZ={0} width={30} height={30} depth={10} />
           <OrbitControls />
           <gridHelper args={[400, 40]} />
         </Canvas>
