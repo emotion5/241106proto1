@@ -72,12 +72,13 @@ const Table = ({
       {panelPositions.map((pos, index) => (
         <Column
           key={`column-${index}`}
+          columnIndex={index}  // Add this
           position={[pos.x, tableHeight/2, 0]}
           width={pos.width}
           depth={depth}
           height={tableHeight}
           type={columnTypes[index] || COLUMN_TYPES.EMPTY}
-          onClick={(event) => onColumnClick(index, event)}
+          onClick={() => onColumnClick(index)}
           isLegroom={pos.isLegroom}
           isLastColumn={pos.isLastColumn}
         />

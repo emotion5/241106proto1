@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import { Box, Slider, Grid, Paper, Typography, Popover, Button } from '@mui/material';
-import StyleSelector from './components/StyleSelector';
 import Table from './components/Table';
 import ColumnTypeSelector from './components/ColumnTypeSelector';
 
@@ -24,7 +23,6 @@ const App = () => {
   const [selectedColumn, setSelectedColumn] = useState(null);
   const [columnTypes, setColumnTypes] = useState({});
   const [popoverAnchor, setPopoverAnchor] = useState(null);
-  const [stylePopoverAnchor, setStylePopoverAnchor] = useState(null);
   
   const stage = calculateStage(width);
   const columns = stage + 1;
@@ -37,29 +35,19 @@ const App = () => {
 
   const handleColumnClick = (columnIndex) => {
     setSelectedColumn(columnIndex);
-    setPopoverAnchor(document.querySelector(`#column-${columnIndex}`));
+    const button = document.querySelector(`#column-button-${columnIndex}`);
+    console.log('Column clicked:', columnIndex);
+    console.log('Button found:', button);
+    setPopoverAnchor(button);
   };
 
-  const handleTypeSelect = (type) => {
+  const handleTypeSelect = ({ type, style }) => {
+    console.log('App received:', type, style);
     setColumnTypes(prev => ({
       ...prev,
-      [selectedColumn]: type
+      [selectedColumn]: { type, style }
     }));
     setPopoverAnchor(null);
-    setSelectedColumn(null);
-  };
-
-  const handleStyleButtonClick = (columnIndex, event) => {
-    setSelectedColumn(columnIndex);
-    setStylePopoverAnchor(event.currentTarget); // 이벤트 타겟을 앵커로 설정
-  };
-
-  const handleStyleSelect = (styleId) => {
-    setSelectedStyle(prev => ({
-      ...prev,
-      [selectedColumn]: styleId
-    }));
-    setStylePopoverAnchor(null);
     setSelectedColumn(null);
   };
 
@@ -85,7 +73,7 @@ const App = () => {
             stage={stage}
             legroomPosition={legroomPosition}
             selectedColumn={selectedColumn}
-            onColumnClick={(index, event) => handleStyleButtonClick(index, event)}
+            onColumnClick={(index) => handleColumnClick(index)}
             columnTypes={columnTypes}
           />
           <OrbitControls />
@@ -161,15 +149,8 @@ const App = () => {
           onTypeSelect={handleTypeSelect}
         />
       </Paper>
-      <StyleSelector
-        open={Boolean(stylePopoverAnchor)}
-        anchorEl={stylePopoverAnchor}
-        onClose={() => setStylePopoverAnchor(null)}
-        onStyleSelect={handleStyleSelect}
-      />
     </Box>
   );
 };
 
-export default App;  
- 
+export default App;

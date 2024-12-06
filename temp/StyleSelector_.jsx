@@ -14,12 +14,12 @@ const StyleSelector = ({ open, anchorEl, onClose, onStyleSelect }) => {
       anchorEl={anchorEl}
       onClose={onClose}
       anchorOrigin={{
-        vertical: 'bottom',
+        vertical: 'top',
         horizontal: 'center',
       }}
       sx={{
         '& .MuiPopover-paper': {
-          backgroundColor: 'rgba(200, 0, 0, 0.4)',
+          backgroundColor: 'rgba(255, 255, 255, 0.8)',
           padding: 2
         }
       }}

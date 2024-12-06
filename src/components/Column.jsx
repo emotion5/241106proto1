@@ -13,7 +13,8 @@ const Column = ({
   type, 
   onClick, 
   isLegroom, 
-  isLastColumn 
+  isLastColumn,
+  columnIndex  // Add this prop
 }) => {
   const [hovered, setHovered] = useState(false);
   const groupRef = useRef();
@@ -80,7 +81,7 @@ const Column = ({
       {!isLastColumn && !isLegroom && (
         <Html position={[innerWidth/2 + 1, -40, 0]}>
           <Button
-            id={`style-button-${groupRef.current?.uuid}`}
+            id={`column-button-${columnIndex}`}  // Use the prop here
             sx={{
               minWidth: '30px',
               height: '30px',
