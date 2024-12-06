@@ -3,6 +3,7 @@ import globals from 'globals'
 import react from 'eslint-plugin-react'
 import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
+import mui from 'eslint-plugin-mui' // Add MUI plugin
 
 export default [
   { 
@@ -24,19 +25,21 @@ export default [
     },
     settings: { 
       react: { 
-        version: '18.3' 
+        version: 'detect' 
       } 
     },
     plugins: {
       react,
       'react-hooks': reactHooks,
-      'react-refresh': reactRefresh
+      'react-refresh': reactRefresh,
+      mui // Add MUI plugin
     },
     rules: {
       ...js.configs.recommended.rules,
       ...react.configs.recommended.rules,
       ...react.configs['jsx-runtime'].rules,
       ...reactHooks.configs.recommended.rules,
+      ...mui.configs.recommended.rules, // Add MUI rules
       // JSX 관련 규칙 비활성화
       'react/prop-types': 'off',
       'react/forbid-prop-types': 'off',

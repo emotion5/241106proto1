@@ -2,19 +2,10 @@ import { useState, useRef, useEffect } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import { Box, Slider, Grid, Paper, Typography, Popover, Button } from '@mui/material';
-import EditIcon from '@mui/icons-material/Edit';
-import { Html } from '@react-three/drei';
-import * as THREE from 'three';
-
 import StyleSelector from './components/StyleSelector';
+import Table from './components/Table';
+import ColumnTypeSelector from './components/ColumnTypeSelector';
 
-// Constants
-const COLUMN_TYPES = {
-  SHELF: 'SHELF',
-  DRAWER: 'DRAWER',
-  COMBINED: 'COMBINED',
-  EMPTY: 'EMPTY'
-};
 
 const calculateStage = (width) => {
   if (width <= 125) return 1;
@@ -24,228 +15,6 @@ const calculateStage = (width) => {
   return 5;
 };
 
-// Column Type Selector Popover Component
-const ColumnTypeSelector = ({ anchorEl, open, onClose, onTypeSelect }) => (
-  <Popover
-    open={open}
-    anchorEl={anchorEl}
-    onClose={onClose}
-    anchorOrigin={{
-      vertical: 'bottom',
-      horizontal: 'center',
-    }}
-  >
-    <Box sx={{ p: 2 }}>
-      {Object.values(COLUMN_TYPES).map((type) => (
-        <Button
-          key={type}
-          onClick={() => {
-            onTypeSelect(type);
-            onClose();
-          }}
-          fullWidth
-          sx={{ mb: 1 }}
-        >
-          {type}
-        </Button>
-      ))}
-    </Box>
-  </Popover>
-);
-
-// Column Component
-const Column = ({ position, width, depth, height, type, onClick, isLegroom, hasCollider, isLastColumn }) => {
-  const [hovered, setHovered] = useState(false);
-  const groupRef = useRef();
-  const color = "white";
-  const innerWidth = width - 2; // 패널 두께 제외
-
-  return (
-    <group ref={groupRef} position={position}>
-      {/* 왼쪽 세로 패널 */}
-      <mesh>
-        <boxGeometry args={[2, height, depth]} />
-        <meshStandardMaterial color={color} />
-      </mesh>
-
-
-      {!isLegroom && !isLastColumn && (
-        <mesh position={[innerWidth/2 + 1, height/2 - 18, 0]}>
-          <boxGeometry args={[innerWidth, 2, depth]} />
-          <meshStandardMaterial color={color} />
-        </mesh>
-      )}
-
-      {/* 두 번째 수평 패널 (첫 번째 패널에서 18 아래) */}
-      {!isLegroom && !isLastColumn && (
-        <mesh position={[innerWidth/2 + 1, height/2 - 36, 0]}>
-          <boxGeometry args={[innerWidth, 2, depth]} />
-          <meshStandardMaterial color={color} />
-        </mesh>
-      )}
-      
-      {/* 바닥 패널은 legroom이 아니고 마지막 컬럼이 아닐 때만 생성 */}
-      {!isLegroom && !isLastColumn && (
-        <mesh position={[innerWidth/2 + 1, -35, 0]}>
-          <boxGeometry args={[innerWidth, 2, depth]} />
-          <meshStandardMaterial color={color} />
-        </mesh>
-      )}
-
-      {/* collider */}
-      {hasCollider && (
-        <mesh
-          position={[innerWidth/2 + 1, 0, 0]}
-          onPointerOver={(e) => {
-            e.stopPropagation();
-            console.log("[마우스오버]");
-            setHovered(true);
-          }}
-          onPointerOut={(e) => {
-            e.stopPropagation();
-            setHovered(false);
-          }}
-          onClick={(e) => {
-            e.stopPropagation();
-            onClick(e);
-            }}
-          >
-            <boxGeometry args={[innerWidth, height, depth]} />
-            <meshStandardMaterial 
-            color="orange"
-            transparent={true}
-            opacity={hovered ? 0.2 : 0}
-            side={THREE.DoubleSide}
-            depthTest={false}
-            />
-          </mesh>
-          )}
-
-          {/* 컬럼 타입별 내부 구성요소 */}
-      {!isLegroom && (
-        <>
-          {type === COLUMN_TYPES.SHELF && (
-            <>
-              {[1, 2].map((level) => (
-                <mesh key={level} position={[innerWidth/2 + 1, height * (level / 3), 0]}>
-                  <boxGeometry args={[innerWidth, 1, depth]} />
-                  <meshStandardMaterial color={color} />
-                </mesh>
-              ))}
-            </>
-          )}
-          {type === COLUMN_TYPES.DRAWER && (
-            <>
-              {[1, 2, 3].map((level) => (
-                <mesh key={level} position={[innerWidth/2 + 1, height * (level / 4), depth/4]}>
-                  <boxGeometry args={[innerWidth, height/5 - 1, depth/2]} />
-                  <meshStandardMaterial color={color} />
-                </mesh>
-              ))}
-            </>
-          )}
-        </>
-      )}
-      {/* 스타일 버튼은 마지막 컬럼이 아니고 legroom이 아닐 때만 표시 */}
-      {!isLastColumn && !isLegroom && (
-        <Html position={[innerWidth/2 + 1, -40, 0]}>
-          <Button
-            id={`style-button-${groupRef.current?.uuid}`}
-            sx={{
-              minWidth: '30px',
-              height: '30px',
-              padding: '4px',
-              backgroundColor: 'white',
-              borderRadius: '50%'
-            }}
-            onClick={(e) => {
-              e.stopPropagation();
-              onClick(e);
-            }}
-          >
-            <EditIcon sx={{ fontSize: 16 }} />
-          </Button>
-        </Html>
-      )}
-    </group>
-  );
-};
-
-// Table Component
-//const Table = ({ width, depth, columns, stage, legroomPosition, selectedColumn, onColumnClick, columnTypes }) => {
-const Table = ({ width, depth, columns, legroomPosition, onColumnClick, columnTypes }) => {
-  const tableHeight = 72;
-  
-  const calculatePanelPositions = () => {
-    const standardColumnWidth = width / (columns + 1);
-    const legroomWidth = standardColumnWidth * 2;
-    
-    if (legroomWidth > 120) {
-      const adjustedColumnWidth = width / (columns + 2);
-      return [...Array(columns + 1)].map((_, i) => ({
-        x: -width/2 + (adjustedColumnWidth * i),
-        width: adjustedColumnWidth,
-        isLegroom: false,
-        isLastColumn: false
-      }));
-    } else {
-      const positions = [];
-      let currentPos = -width/2;
-      
-      // Changed: Start from 0 instead of 1
-      for (let i = 0; i <= columns; i++) {
-        // Adjusted: Compare with (legroomPosition - 1) to match 1-based position
-        if (i === (legroomPosition - 1)) {
-          positions.push({ 
-            x: currentPos, 
-            width: legroomWidth,
-            isLegroom: true,
-            isLastColumn: i === columns
-          });
-          currentPos += legroomWidth;
-        } else {
-          positions.push({ 
-            x: currentPos, 
-            width: standardColumnWidth,
-            isLegroom: false,
-            isLastColumn: i === columns
-          });
-          currentPos += standardColumnWidth;
-        }
-      }
-      return positions;
-    }
-  };
-
-  const panelPositions = calculatePanelPositions();
-
-  return (
-    <group>
-      {/* Table top */}
-      <mesh position={[0, tableHeight + 1, 0]}>
-        <boxGeometry args={[width + 2, 2, depth]} />
-        <meshStandardMaterial color="red" />
-      </mesh>
-      
-      {/* Columns with hover effect */}
-      {panelPositions.map((pos, index) => (
-        <Column
-          key={`column-${index}`}
-          position={[pos.x, tableHeight/2, 0]}
-          width={pos.width}
-          depth={depth}
-          height={tableHeight}
-          type={columnTypes[index] || COLUMN_TYPES.EMPTY}
-          //isSelected={selectedColumn === index}
-          onClick={(event) => onColumnClick(index, event)}
-          isLegroom={pos.isLegroom}
-          isLastColumn={pos.isLastColumn} // isLastColumn prop 추가
-          hasCollider={!pos.isLastColumn} // hasCollider prop 추가
-        />
-      ))}
-    </group>
-  );
-};
 
 // Main App Component
 const App = () => {
@@ -256,7 +25,6 @@ const App = () => {
   const [columnTypes, setColumnTypes] = useState({});
   const [popoverAnchor, setPopoverAnchor] = useState(null);
   const [stylePopoverAnchor, setStylePopoverAnchor] = useState(null);
-  //const [selectedStyle, setSelectedStyle] = useState({});
   
   const stage = calculateStage(width);
   const columns = stage + 1;
@@ -326,7 +94,12 @@ const App = () => {
       </Box>
       
       {/* Control Panel */}
-      <Paper sx={{ flex: 1, p: 3, m: 2 }}>
+      <Paper sx={{ 
+      flex: 1, 
+      p: 3, 
+      m: 2,
+      backgroundColor: '#f5f5f5' // 원하는 색상 지정
+      }}>
         <Typography variant="h6" gutterBottom>
           Table Configurator
         </Typography>
@@ -398,4 +171,5 @@ const App = () => {
   );
 };
 
-export default App;
+export default App;  
+ 
